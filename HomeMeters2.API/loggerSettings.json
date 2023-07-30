@@ -15,7 +15,7 @@
       {
         "Name": "Console",
         "Args": {
-          "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] [{EventId}] {Message,30:lj}{NewLine}{Exception}"
+          "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] {Message,30:lj}{NewLine}{Exception}"
         }
       },
       {
