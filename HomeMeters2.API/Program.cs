@@ -3,8 +3,6 @@ using HomeMeters2.API.Logging;
 using Serilog;
 using Serilog.Events;
 
-ILogger<Program>? logger = null;
-
 try
 {
     var builder = WebApplication.CreateBuilder(args);
@@ -34,9 +32,9 @@ try
 
     app.MapControllers();
 
-    logger = app.Services.GetRequiredService<ILogger<Program>>();
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
     logger.LogWarning(LogIds.AppStartup, "Application startup");
-    app.Lifetime.ApplicationStopping.Register(() => logger?.LogWarning(LogIds.AppClose, "Application close"));
+    app.Lifetime.ApplicationStopping.Register(() => logger.LogWarning(LogIds.AppClose, "Application close"));
     
     app.Run();
 }
