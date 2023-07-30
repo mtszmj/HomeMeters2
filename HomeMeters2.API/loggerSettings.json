@@ -1,0 +1,95 @@
+{
+  "Serilog": {
+    "Using": [
+      "Serilog.Sinks.Console", "Serilog.Sinks.File"
+    ],
+    "MinimumLevel": {
+      "Default": "Verbose",
+      "Override": {
+        "Microsoft": "Warning",
+        "Microsoft.Hosting.Lifetime": "Information",
+        "Microsoft.AspNetCore": "Warning"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+          "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] [{EventId}] {Message,30:lj}{NewLine}{Exception}"
+        }
+      },
+      {
+        "Name": "File",
+        "Args": {
+          "path": "./logs/log_.log",
+          "outputTemplate": "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] {Message}\t[{SourceContext}] [{EventId}]{NewLine}\t{Properties:j}{NewLine}{Exception}",
+          "rollingInterval": "Day",
+          "rollOnFileSizeLimit": true,
+          "retainedFileCountLimit": 10,
+          "fileSizeLimitBytes": 10000000
+        }
+      },
+      {
+        "Name": "Logger",
+        "Args": {
+          "configureLogger": {
+            "Filter": [
+              {
+                "Name": "ByIncludingOnly",
+                "Args": {
+                  "expression": "(@l in ['Warning','Error','Fatal'])"
+                }
+              }
+            ],
+            "WriteTo": [
+              {
+                "Name": "File",
+                "Args": {
+                  "path": "./logs/ex_.log",
+                  "outputTemplate": "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] {Message}\t[{SourceContext}] [{EventId}]{NewLine}\t{Properties:j}{NewLine}{Exception}",
+                  "rollingInterval": "Day",
+                  "rollOnFileSizeLimit": true,
+                  "retainedFileCountLimit": 30,
+                  "fileSizeLimitBytes": 5242880
+                }
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "Enrich": [
+      "FromLogContext",
+      "WithMachineName",
+      "WithEnvironmentUserName",
+      "WithEnvironmentName",
+      "WithProcessName",
+      "WithProcessId",
+      "WithThreadName",
+      "WithThreadId"
+    ],
+    "Destructure": [
+      {
+        "Name": "ToMaximumDepth",
+        "Args": {
+          "maximumDestructuringDepth": 4
+        }
+      },
+      {
+        "Name": "ToMaximumStringLength",
+        "Args": {
+          "maximumStringLength": 100
+        }
+      },
+      {
+        "Name": "ToMaximumCollectionCount",
+        "Args": {
+          "maximumCollectionCount": 10
+        }
+      }
+    ],
+    "Properties": {
+      "Application": "HomeMeters2.API"
+    }
+  }
+}
