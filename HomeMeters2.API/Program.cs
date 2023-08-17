@@ -1,5 +1,6 @@
 using System.Reflection;
 using HomeMeters2.API.Logging;
+using HomeMeters2.API.Places;
 using Serilog;
 using Serilog.Events;
 
@@ -7,8 +8,10 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
+    
     // Add services to the container.
-
+    builder.Services.AddSingleton<InMemoryTestData>();
+    
     UseSerilog(builder);
 
     builder.Services.AddControllers();
@@ -49,8 +52,12 @@ finally
 
 void UseSerilog(WebApplicationBuilder webApplicationBuilder)
 {
+    var directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
+    if (directoryName is null)
+        throw new InvalidOperationException("Cannot get directory name for assembly");
+    
     var loggerSettingsConfiguration = new ConfigurationBuilder()
-        .SetBasePath(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location))
+        .SetBasePath(directoryName)
         .AddJsonFile("loggerSettings.json", false, true)
         .Build();
 
