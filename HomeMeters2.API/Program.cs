@@ -1,8 +1,12 @@
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using HomeMeters2.API.Extensions;
 using HomeMeters2.API.Logging;
 using HomeMeters2.API.Places;
 using Serilog;
 using Serilog.Events;
+
+[assembly: InternalsVisibleTo("HomeMeters2.API.Tests")]
 
 try
 {
@@ -52,6 +56,13 @@ finally
 
 void UseSerilog(WebApplicationBuilder webApplicationBuilder)
 {
+    if (webApplicationBuilder.IsIntegrationTest())
+    {
+        webApplicationBuilder.Host.UseSerilog((context, configuration) =>
+            configuration.WriteTo.Console().MinimumLevel.Debug());
+        return;
+    }
+    
     var directoryName = Path.GetDirectoryName(Assembly.GetEntryAssembly()?.Location);
     if (directoryName is null)
         throw new InvalidOperationException("Cannot get directory name for assembly");
