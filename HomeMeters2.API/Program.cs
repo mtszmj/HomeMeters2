@@ -17,6 +17,7 @@ try
     builder.Services.AddSingleton<InMemoryTestData>();
     
     UseSerilog(builder);
+    builder.Services.AddHealthChecks();
 
     builder.Services.AddControllers();
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -33,11 +34,14 @@ try
     }
 
     UseSerilogRequestLogging(app);
+    app.MapHealthChecks("/api/healthcheck");
+
     app.UseHttpsRedirection();
 
     app.UseAuthorization();
 
     app.MapControllers();
+
 
     var logger = app.Services.GetRequiredService<ILogger<Program>>();
     logger.LogWarning(LogIds.AppStartup, "Application startup");
