@@ -1,33 +1,11 @@
-using System.Net;
-using HomeMeters2.API.Extensions;
-using Microsoft.AspNetCore.Mvc.Testing;
-
 namespace HomeMeters2.API.Tests.Integration.Places;
 
-[TestFixture]
-public class PlaceControllerTests
+public class PlaceControllerTests : IntegrationTestsBase
 {
-    private WebApplicationFactory<Program> _factory;
-    private HttpClient _client;
-    
-    [SetUp]
-    public void Setup()
-    {
-        _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder.FlagAsIntegrationTest());
-        _client = _factory.CreateClient();
-    }
-
-    [TearDown]
-    public void TearDown()
-    {
-        _factory.Dispose();
-        _client.Dispose();
-    }
-
     [Test]
-    public async Task TestGetEndpoint()
+    public async Task place_endpoint_get_returns_ok()
     {
-        var response = await _client.GetAsync("/api/place");
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        var response = await Client.GetAsync("/api/place");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 }
