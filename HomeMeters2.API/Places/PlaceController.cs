@@ -1,3 +1,4 @@
+using HomeMeters2.API.DataAccess;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HomeMeters2.API.Places;
@@ -7,15 +8,18 @@ namespace HomeMeters2.API.Places;
 public class PlaceController : ControllerBase
 {
     private readonly InMemoryTestData _repository;
+    private readonly ApplicationDbContext _dbContext;
 
-    public PlaceController(InMemoryTestData repository)
+    public PlaceController(InMemoryTestData repository, ApplicationDbContext dbContext)
     {
         _repository = repository;
+        _dbContext = dbContext;
     }
     
     [HttpGet()]
     public IEnumerable<PlaceDto> GetPlaces()
     {
+        var c =_dbContext.Places.Count();
         return _repository.Places.Where(x => !x.IsSoftDeleted).Select(x => new PlaceDto
         {
             Id = x.Id,
