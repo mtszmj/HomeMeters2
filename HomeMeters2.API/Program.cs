@@ -1,9 +1,13 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using HomeMeters2.API.DataAccess;
 using HomeMeters2.API.Extensions;
 using HomeMeters2.API.Logging;
 using HomeMeters2.API.Places;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Serilog;
+using Serilog.Core;
 using Serilog.Events;
 
 [assembly: InternalsVisibleTo("HomeMeters2.API.Tests")]
@@ -11,18 +15,24 @@ using Serilog.Events;
 try
 {
     var builder = WebApplication.CreateBuilder(args);
-
     
     // Add services to the container.
     builder.Services.AddSingleton<InMemoryTestData>();
     
     UseSerilog(builder);
     builder.Services.AddHealthChecks();
-
+    
     builder.Services.AddControllers();
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlServer("name=ConnectionStrings:DefaultConnection")
+            .EnableSensitiveDataLogging(builder.Environment.IsDevelopment())
+            .EnableDetailedErrors(builder.Environment.IsDevelopment())
+            .LogTo(Log.Logger.Debug, LogLevel.Information)
+            // .UseLoggerFactory(LoggerFactory.Create(loggerBuilder => loggerBuilder.AddSerilog()))
+        );
 
     var app = builder.Build();
 
@@ -60,6 +70,11 @@ finally
 
 void UseSerilog(WebApplicationBuilder webApplicationBuilder)
 {
+    if (IsEntityFrameworkMigration())
+    {
+        return;
+    }
+    
     if (webApplicationBuilder.IsIntegrationTest())
     {
         webApplicationBuilder.Host.UseSerilog((context, configuration) =>
@@ -92,4 +107,9 @@ void UseSerilogRequestLogging(WebApplication webApplication)
             diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme);
         };
     });
+}
+
+bool IsEntityFrameworkMigration()
+{
+    return Assembly.GetEntryAssembly()?.GetName()?.Name?.Equals("ef", StringComparison.OrdinalIgnoreCase) ?? false;
 }
