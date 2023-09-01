@@ -1,5 +1,8 @@
 using HomeMeters2.API.DataAccess;
+using HomeMeters2.API.Logging;
+using HomeMeters2.API.Places.Dtos;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HomeMeters2.API.Places;
 
@@ -7,101 +10,147 @@ namespace HomeMeters2.API.Places;
 [Route("api/[controller]")]
 public class PlaceController : ControllerBase
 {
-    private readonly InMemoryTestData _repository;
     private readonly ApplicationDbContext _dbContext;
+    private readonly ILogger<PlaceController> _logger;
 
-    public PlaceController(InMemoryTestData repository, ApplicationDbContext dbContext)
+    public PlaceController(ApplicationDbContext dbContext, ILogger<PlaceController> logger)
     {
-        _repository = repository;
         _dbContext = dbContext;
+        _logger = logger;
     }
     
     [HttpGet()]
-    public IEnumerable<PlaceDto> GetPlaces()
+    public async Task<ActionResult<IEnumerable<PlaceDto>>> GetPlaces()
     {
-        var c =_dbContext.Places.Count();
-        return _repository.Places.Where(x => !x.IsSoftDeleted).Select(x => new PlaceDto
+        try
         {
-            Id = x.Id,
-            Name = x.Name,
-            Description = x.Description,
-            DateCreatedUtc = x.DateCreatedUtc,
-            DateModifiedUtc = x.DateModifiedUtc
-        });
+            return Ok(await _dbContext.Places.ToListAsync());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
+            return Problem();
+        }
     }
 
     [HttpGet("Deleted")]
-    public IEnumerable<PlaceDeletedDto> GetDeletedPlaces()
+    public async Task<ActionResult<IEnumerable<PlaceDeletedDto>>> GetDeletedPlaces()
     {
-        return _repository.Places.Where(x => x.IsSoftDeleted).Select(x => new PlaceDeletedDto
+        try
         {
-            Id = x.Id,
-            Name = x.Name,
-            Description = x.Description,
-            DateCreatedUtc = x.DateCreatedUtc,
-            DateModifiedUtc = x.DateModifiedUtc,
-            DateSoftDeletedUtc = x.DateSoftDeletedUtc!.Value
-        });
+            return Ok(await _dbContext.Places.IgnoreQueryFilters().Where(x => x.IsSoftDeleted).Select(x => new PlaceDeletedDto
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Description = x.Description,
+                DateCreatedUtc = x.DateCreatedUtc,
+                DateModifiedUtc = x.DateModifiedUtc,
+                DateSoftDeletedUtc = x.DateSoftDeletedUtc!.Value
+            }).ToListAsync());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
+            return Problem();
+        }
     } 
 
     [HttpGet("{id:int}")]
-    public ActionResult<PlaceDto> GetPlace(int id)
+    public async Task<ActionResult<PlaceDto>> GetPlace(int id)
     {
-        var place = _repository.Places.FirstOrDefault(x => x.Id == id);
-        if (place is null)
-            return NotFound();
-        
-        return new PlaceDto
+        try
         {
-            Id = place.Id,
-            Name = place.Name,
-            Description = place.Description,
-            DateCreatedUtc = place.DateCreatedUtc,
-            DateModifiedUtc = place.DateModifiedUtc
-        };
+            var place = await _dbContext.Places.FirstOrDefaultAsync(x => x.Id == id);
+            if (place is null)
+                return NotFound();
+            
+            return new PlaceDto
+            {
+                Id = place.Id,
+                Name = place.Name,
+                Description = place.Description,
+                DateCreatedUtc = place.DateCreatedUtc,
+                DateModifiedUtc = place.DateModifiedUtc
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
+            return Problem();
+        }
     }
 
     [HttpPost]
-    public ActionResult<string> CreatePlace(CreatePlaceDto dto)
+    public async Task<ActionResult<string>> CreatePlace(CreatePlaceDto dto)
     {
-        var id = _repository.Places.Max(x => x.Id) + 1;
-        var place = new Place(dto.Name, dto.Description ?? string.Empty, TimeProvider.System.GetUtcNow().UtcDateTime)
+        try
         {
-            Id = id
-        };
-        
-        _repository.Places.Add(place);
-        return CreatedAtAction(nameof(GetPlace), new { id = place.Id }, new PlaceDto
+            var place = new Place(dto.Name, dto.Description ?? string.Empty,
+                TimeProvider.System.GetUtcNow().UtcDateTime);
+            
+            _dbContext.Places.Add(place);
+            var count = await _dbContext.SaveChangesAsync();
+
+            if (count == 0) return BadRequest("Could not save place.");
+            
+            return CreatedAtAction(nameof(GetPlace), new { id = place.Id }, new PlaceDto
+            {
+                Id = place.Id,
+                Name = place.Name,
+                Description = place.Description,
+                DateCreatedUtc = place.DateCreatedUtc,
+                DateModifiedUtc = place.DateModifiedUtc
+            });
+
+        }
+        catch (Exception ex)
         {
-            Id = place.Id,
-            Name = place.Name,
-            Description = place.Description,
-            DateCreatedUtc = place.DateCreatedUtc,
-            DateModifiedUtc = place.DateModifiedUtc
-        });
+            _logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
+            return Problem();
+        }        
     }
 
     [HttpPut]
-    public ActionResult UpdatePlace(UpdatePlaceDto dto)
+    public async Task<ActionResult> UpdatePlace(UpdatePlaceDto dto)
     {
-        var place = _repository.Places.FirstOrDefault(x => x.Id == dto.Id);
-        if (place is null)
-            return NotFound();
+        try
+        {
+            var place = await _dbContext.Places.FirstOrDefaultAsync(x => x.Id == dto.Id);
+            if (place is null)
+                return NotFound();
 
-        var result = place.Update(dto.Name, dto.Description);
+            var result = place.Update(dto.Name, dto.Description);
+            if (!result)
+                return BadRequest("No update took place");
+
+            var updated = await _dbContext.SaveChangesAsync();
         
-        return result ? NoContent() : BadRequest("No update took place");
+            return updated > 0 ? NoContent() : BadRequest("No update took place");   
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
+            return Problem();
+        }
     }
 
     [HttpDelete("{id}")]
-    public ActionResult DeletePlace(int id)
+    public async Task<ActionResult> DeletePlace(int id)
     {
-        var place = _repository.Places.FirstOrDefault(x => x.Id == id);
-        if (place is null)
-            return NotFound();
+        try
+        {
+            var place = await _dbContext.Places.FirstOrDefaultAsync(x => x.Id == id);
+            if (place is null)
+                return NotFound();
 
-        place.Delete();
-        return NoContent();
+            place.Delete();
+            var updated = await _dbContext.SaveChangesAsync();
+            return updated > 0 ? NoContent() : BadRequest("No delete took place");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
+            return Problem();
+        }
     }
-    
 }
