@@ -17,7 +17,6 @@ try
     var builder = WebApplication.CreateBuilder(args);
     
     // Add services to the container.
-    builder.Services.AddSingleton<InMemoryTestData>();
     
     UseSerilog(builder);
     builder.Services.AddHealthChecks();
@@ -31,7 +30,6 @@ try
             .EnableSensitiveDataLogging(builder.Environment.IsDevelopment())
             .EnableDetailedErrors(builder.Environment.IsDevelopment())
             .LogTo(Log.Logger.Debug, LogLevel.Information)
-            // .UseLoggerFactory(LoggerFactory.Create(loggerBuilder => loggerBuilder.AddSerilog()))
         );
 
     var app = builder.Build();

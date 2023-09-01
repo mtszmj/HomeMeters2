@@ -1,4 +1,4 @@
-namespace HomeMeters2.API.Places;
+namespace HomeMeters2.API.Places.Dtos;
 
 public class PlaceDto
 {
