@@ -3,11 +3,8 @@ using System.Runtime.CompilerServices;
 using HomeMeters2.API.DataAccess;
 using HomeMeters2.API.Extensions;
 using HomeMeters2.API.Logging;
-using HomeMeters2.API.Places;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Serilog;
-using Serilog.Core;
 using Serilog.Events;
 
 [assembly: InternalsVisibleTo("HomeMeters2.API.Tests")]

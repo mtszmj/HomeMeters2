@@ -35,9 +35,10 @@ public class IntegrationTestsBase
                     {
                         services.Remove(descriptor);
                     }
-                    
+
+                    var inMemoryDbId = Guid.NewGuid().ToString();
                     services.AddDbContext<ApplicationDbContext>(options => options
-                        .UseInMemoryDatabase("_")//Guid.NewGuid().ToString())
+                        .UseInMemoryDatabase(inMemoryDbId)
                         .ConfigureWarnings(b => b.Ignore(InMemoryEventId.TransactionIgnoredWarning)));
                 });
             });
