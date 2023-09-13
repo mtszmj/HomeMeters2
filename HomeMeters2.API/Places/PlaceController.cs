@@ -1,6 +1,7 @@
 using HomeMeters2.API.DataAccess;
 using HomeMeters2.API.Logging;
 using HomeMeters2.API.Places.Dtos;
+using HomeMeters2.API.Services.PublicIds;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,11 +12,15 @@ namespace HomeMeters2.API.Places;
 public class PlaceController : ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly PublicIdGenerator _publicIdGenerator;
     private readonly ILogger<PlaceController> _logger;
 
-    public PlaceController(ApplicationDbContext dbContext, ILogger<PlaceController> logger)
+    public PlaceController(ApplicationDbContext dbContext,
+        PublicIdGenerator publicIdGenerator,
+        ILogger<PlaceController> logger)
     {
         _dbContext = dbContext;
+        _publicIdGenerator = publicIdGenerator;
         _logger = logger;
     }
 

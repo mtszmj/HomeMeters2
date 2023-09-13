@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using HomeMeters2.API.DataAccess;
 using HomeMeters2.API.Extensions;
 using HomeMeters2.API.Logging;
+using HomeMeters2.API.Services.PublicIds;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
@@ -14,6 +15,11 @@ try
     var builder = WebApplication.CreateBuilder(args);
     
     // Add services to the container.
+    builder.Services.AddOptions<SqidsConfiguration>()
+        .BindConfiguration("Sqids")
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
+    builder.Services.AddScoped<PublicIdGenerator>();
     
     UseSerilog(builder);
     builder.Services.AddHealthChecks();
