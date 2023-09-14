@@ -34,6 +34,7 @@ try
             .EnableDetailedErrors(builder.Environment.IsDevelopment())
             .LogTo(Log.Logger.Debug, LogLevel.Information)
         );
+    builder.Services.AddAutoMapper(typeof(Program));
 
     var app = builder.Build();
 
