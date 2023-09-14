@@ -1,6 +1,8 @@
+using HomeMeters2.API.Constants;
 using HomeMeters2.API.DataAccess;
 using HomeMeters2.API.Logging;
 using HomeMeters2.API.Places.Dtos;
+using HomeMeters2.API.Services.PublicIds;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,11 +13,15 @@ namespace HomeMeters2.API.Places;
 public class PlaceController : ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly PublicIdGenerator _publicIdGenerator;
     private readonly ILogger<PlaceController> _logger;
 
-    public PlaceController(ApplicationDbContext dbContext, ILogger<PlaceController> logger)
+    public PlaceController(ApplicationDbContext dbContext,
+        PublicIdGenerator publicIdGenerator,
+        ILogger<PlaceController> logger)
     {
         _dbContext = dbContext;
+        _publicIdGenerator = publicIdGenerator;
         _logger = logger;
     }
 
@@ -25,7 +31,16 @@ public class PlaceController : ControllerBase
     {
         try
         {
-            return Ok(await _dbContext.Places.ToListAsync());
+            var places = await _dbContext.Places.ToListAsync();
+            var dtos = places.Select(x => new PlaceDto
+            {
+                Id = ToPublicId(x),
+                Name = x.Name,
+                Description = x.Description,
+                DateCreatedUtc = x.DateCreatedUtc,
+                DateModifiedUtc = x.DateModifiedUtc
+            });
+            return Ok(dtos);
         }
         catch (Exception ex)
         {
@@ -34,20 +49,21 @@ public class PlaceController : ControllerBase
         }
     }
 
-    [HttpGet("{id:int}")]
+    [HttpGet("{id}")]
     [ProducesResponseType(typeof(PlaceDeletedDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PlaceDto>> GetPlace(int id)
+    public async Task<ActionResult<PlaceDto>> GetPlace(string id)
     {
         try
         {
-            var place = await _dbContext.Places.FirstOrDefaultAsync(x => x.Id == id);
+            var decodedId = PublicToInternalId(id);
+            var place = await _dbContext.Places.FirstOrDefaultAsync(x => x.Id == decodedId);
             if (place is null)
                 return NotFound();
 
             return new PlaceDto
             {
-                Id = place.Id,
+                Id = ToPublicId(place),
                 Name = place.Name,
                 Description = place.Description,
                 DateCreatedUtc = place.DateCreatedUtc,
@@ -67,16 +83,17 @@ public class PlaceController : ControllerBase
     {
         try
         {
-            return Ok(await _dbContext.Places.IgnoreQueryFilters().Where(x => x.IsSoftDeleted).Select(x =>
-                new PlaceDeletedDto
-                {
-                    Id = x.Id,
-                    Name = x.Name,
-                    Description = x.Description,
-                    DateCreatedUtc = x.DateCreatedUtc,
-                    DateModifiedUtc = x.DateModifiedUtc,
-                    DateSoftDeletedUtc = x.DateSoftDeletedUtc!.Value
-                }).ToListAsync());
+            var places = await _dbContext.Places.IgnoreQueryFilters().Where(x => x.IsSoftDeleted).ToListAsync();
+
+            return Ok(places.Select(x => new PlaceDeletedDto
+            {
+                Id = ToPublicId(x),
+                Name = x.Name,
+                Description = x.Description,
+                DateCreatedUtc = x.DateCreatedUtc,
+                DateModifiedUtc = x.DateModifiedUtc,
+                DateSoftDeletedUtc = x.DateSoftDeletedUtc!.Value
+            }));
         }
         catch (Exception ex)
         {
@@ -85,21 +102,22 @@ public class PlaceController : ControllerBase
         }
     }
 
-    [HttpGet("Deleted/{id:int}")]
+    [HttpGet("Deleted/{id}")]
     [ProducesResponseType(typeof(PlaceDeletedDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PlaceDeletedDto>> GetDeletedPlace(int id)
+    public async Task<ActionResult<PlaceDeletedDto>> GetDeletedPlace(string id)
     {
         try
         {
+            var decodedId = PublicToInternalId(id);
             var place = await _dbContext.Places.IgnoreQueryFilters()
-                .FirstOrDefaultAsync(x => x.Id == id && x.IsSoftDeleted);
+                .FirstOrDefaultAsync(x => x.Id == decodedId && x.IsSoftDeleted);
             if (place is null)
                 return NotFound();
 
             return new PlaceDeletedDto
             {
-                Id = place.Id,
+                Id = ToPublicId(place),
                 Name = place.Name,
                 Description = place.Description,
                 DateCreatedUtc = place.DateCreatedUtc,
@@ -130,9 +148,10 @@ public class PlaceController : ControllerBase
 
             if (count == 0) return BadRequest("Could not save place.");
 
-            return CreatedAtAction(nameof(GetPlace), new { id = place.Id }, new PlaceDto
+            var publicId = ToPublicId(place);
+            return CreatedAtAction(nameof(GetPlace), new { id = publicId }, new PlaceDto
             {
-                Id = place.Id,
+                Id = publicId,
                 Name = place.Name,
                 Description = place.Description,
                 DateCreatedUtc = place.DateCreatedUtc,
@@ -154,7 +173,8 @@ public class PlaceController : ControllerBase
     {
         try
         {
-            var place = await _dbContext.Places.FirstOrDefaultAsync(x => x.Id == dto.Id);
+            var decodedId = PublicToInternalId(dto.Id);
+            var place = await _dbContext.Places.FirstOrDefaultAsync(x => x.Id == decodedId);
             if (place is null)
                 return NotFound();
 
@@ -176,11 +196,12 @@ public class PlaceController : ControllerBase
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> DeletePlace(int id)
+    public async Task<ActionResult> DeletePlace(string id)
     {
         try
         {
-            var place = await _dbContext.Places.FirstOrDefaultAsync(x => x.Id == id);
+            var decodedId = PublicToInternalId(id);
+            var place = await _dbContext.Places.FirstOrDefaultAsync(x => x.Id == decodedId);
             if (place is null)
                 return NotFound();
 
@@ -193,5 +214,16 @@ public class PlaceController : ControllerBase
             _logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
             return Problem();
         }
+    }
+
+    private int PublicToInternalId(string publicId)
+    {
+        var decoded = _publicIdGenerator.Decode(publicId);
+        return decoded.Count > 1 ? decoded[1] : 0;
+    }
+
+    private string ToPublicId(Place place)
+    {
+        return _publicIdGenerator.Encode(PlaceConstants.PlacePublicIdAppendValue, place.Id);
     }
 }
