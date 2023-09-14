@@ -1,3 +1,5 @@
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using HomeMeters2.API.Constants;
 using HomeMeters2.API.DataAccess;
 using HomeMeters2.API.Logging;
@@ -14,14 +16,17 @@ public class PlaceController : ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly PublicIdGenerator _publicIdGenerator;
+    private readonly IMapper _mapper;
     private readonly ILogger<PlaceController> _logger;
 
     public PlaceController(ApplicationDbContext dbContext,
         PublicIdGenerator publicIdGenerator,
+        IMapper mapper,
         ILogger<PlaceController> logger)
     {
         _dbContext = dbContext;
         _publicIdGenerator = publicIdGenerator;
+        _mapper = mapper;
         _logger = logger;
     }
 
@@ -32,14 +37,7 @@ public class PlaceController : ControllerBase
         try
         {
             var places = await _dbContext.Places.ToListAsync();
-            var dtos = places.Select(x => new PlaceDto
-            {
-                Id = ToPublicId(x),
-                Name = x.Name,
-                Description = x.Description,
-                DateCreatedUtc = x.DateCreatedUtc,
-                DateModifiedUtc = x.DateModifiedUtc
-            });
+            var dtos = places.Select(x => _mapper.Map<PlaceDto>(x) with { Id = ToPublicId(x) });
             return Ok(dtos);
         }
         catch (Exception ex)
@@ -61,14 +59,7 @@ public class PlaceController : ControllerBase
             if (place is null)
                 return NotFound();
 
-            return new PlaceDto
-            {
-                Id = ToPublicId(place),
-                Name = place.Name,
-                Description = place.Description,
-                DateCreatedUtc = place.DateCreatedUtc,
-                DateModifiedUtc = place.DateModifiedUtc
-            };
+            return _mapper.Map<PlaceDto>(place) with { Id = ToPublicId(place) };
         }
         catch (Exception ex)
         {
@@ -85,15 +76,8 @@ public class PlaceController : ControllerBase
         {
             var places = await _dbContext.Places.IgnoreQueryFilters().Where(x => x.IsSoftDeleted).ToListAsync();
 
-            return Ok(places.Select(x => new PlaceDeletedDto
-            {
-                Id = ToPublicId(x),
-                Name = x.Name,
-                Description = x.Description,
-                DateCreatedUtc = x.DateCreatedUtc,
-                DateModifiedUtc = x.DateModifiedUtc,
-                DateSoftDeletedUtc = x.DateSoftDeletedUtc!.Value
-            }));
+            var dtos = places.Select(x => _mapper.Map<PlaceDeletedDto>(x) with { Id = ToPublicId(x) });
+            return Ok(dtos);
         }
         catch (Exception ex)
         {
@@ -115,16 +99,8 @@ public class PlaceController : ControllerBase
             if (place is null)
                 return NotFound();
 
-            return new PlaceDeletedDto
-            {
-                Id = ToPublicId(place),
-                Name = place.Name,
-                Description = place.Description,
-                DateCreatedUtc = place.DateCreatedUtc,
-                DateModifiedUtc = place.DateModifiedUtc,
-                DateSoftDeletedUtc = place.DateSoftDeletedUtc ??
-                                     DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc)
-            };
+            var dto = _mapper.Map<PlaceDeletedDto>(place) with { Id = ToPublicId(place) };
+            return dto;
         }
         catch (Exception ex)
         {
@@ -149,14 +125,11 @@ public class PlaceController : ControllerBase
             if (count == 0) return BadRequest("Could not save place.");
 
             var publicId = ToPublicId(place);
-            return CreatedAtAction(nameof(GetPlace), new { id = publicId }, new PlaceDto
-            {
-                Id = publicId,
-                Name = place.Name,
-                Description = place.Description,
-                DateCreatedUtc = place.DateCreatedUtc,
-                DateModifiedUtc = place.DateModifiedUtc
-            });
+            return CreatedAtAction(
+                nameof(GetPlace), 
+                new { id = publicId },
+                _mapper.Map<PlaceDto>(place) with { Id = publicId }
+            );
         }
         catch (Exception ex)
         {
