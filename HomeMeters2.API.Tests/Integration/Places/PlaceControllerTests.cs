@@ -57,7 +57,7 @@ public class PlaceControllerTests : IntegrationTestsBase
         var placesDto = JsonSerializer.Deserialize<PlaceDto[]>(placesContent, JsonSerializerOptions);
         placesDto.Should().NotBeNull();
         placesDto.Should().HaveCount(2);
-        placesDto.Select(x => x.Id).Should().BeEquivalentTo(new[] { 1, 3 });
+        placesDto.Select(x => x.Id).Should().BeEquivalentTo(new[] { p1.Id, p3.Id });
     }
 
     [Test]
@@ -91,7 +91,7 @@ public class PlaceControllerTests : IntegrationTestsBase
         var createResponse = await Client.PostAsync(EndpointUri, content);
         var createResponseContent = await createResponse.Content.ReadAsStringAsync();
         var placeDto = JsonSerializer.Deserialize<PlaceDto>(createResponseContent, JsonSerializerOptions);
-        return placeDto ?? new PlaceDto { Id = -1, Name = "", Description = "" };
+        return placeDto ?? new PlaceDto { Id = "", Name = "", Description = "" };
     }
 
     [Test]
@@ -226,7 +226,7 @@ public class PlaceControllerTests : IntegrationTestsBase
         // arrange
 
         // act
-        var dto = new UpdatePlaceDto(1, "Test1_updated", $"{nameof(update_returns_not_found)}_1_updated");
+        var dto = new UpdatePlaceDto("notfoundid", "Test1_updated", $"{nameof(update_returns_not_found)}_1_updated");
         var updateContent = JsonContent.Create(dto);
         var response = await Client.PutAsync(EndpointUri, updateContent);
 

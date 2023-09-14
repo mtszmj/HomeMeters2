@@ -1,10 +1,10 @@
 namespace HomeMeters2.API.Places.Dtos;
 
-public class PlaceDto
+public record PlaceDto
 {
-    public required int Id { get; set; }
-    public required string Name { get; set; }
-    public required string Description { get; set; }
-    public DateTime DateCreatedUtc { get; set; }
-    public DateTime? DateModifiedUtc { get; set; }
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public required string Description { get; init; }
+    public DateTime DateCreatedUtc { get; init; }
+    public DateTime? DateModifiedUtc { get; init; }
 }
