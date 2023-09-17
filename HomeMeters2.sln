@@ -4,6 +4,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeMeters2.API", "HomeMete
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HomeMeters2.API.Tests", "HomeMeters2.API.Tests\HomeMeters2.API.Tests.csproj", "{5D9B4F02-5086-4D22-840B-37201ECFE324}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Requests", "Requests", "{25B4F646-E06F-4E44-9CF6-7E43EC1D4D6A}"
+	ProjectSection(SolutionItems) = preProject
+		Requests\test.http = Requests\test.http
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

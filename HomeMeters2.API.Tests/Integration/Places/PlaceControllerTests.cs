@@ -168,7 +168,7 @@ public class PlaceControllerTests : IntegrationTestsBase
         _ = await Client.DeleteAsync($"{EndpointUri}/{id3}");
 
         // act
-        var response = await Client.GetAsync($"{DeletedEndpointUri}");
+        var response = await LoggedInClient.GetAsync($"{DeletedEndpointUri}");
 
         // assert 
         var content = await response.Content.ReadAsStringAsync();
