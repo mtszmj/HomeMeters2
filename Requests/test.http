@@ -38,3 +38,8 @@ Content-Type: application/json
 GET http://localhost:5248/api/Place/Deleted
 Authorization: Bearer {{current_token}}
 Content-Type: application/json
+
+### 6 account info
+GET http://localhost:5248/api/account/manage/info
+Authorization: Bearer {{current_token}}
+Content-Type: application/json
