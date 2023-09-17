@@ -1,0 +1,41 @@
+### 1 get places
+GET http://localhost:5248/api/Place
+Content-Type: application/json
+
+### 2 get places deleted
+GET http://localhost:5248/api/Place/Deleted
+Content-Type: application/json
+
+
+### 3 create user
+POST http://localhost:5248/api/account/register
+Content-Type: application/json
+
+{
+  "username": "Test",
+  "password": "Test1!",
+  "email": "test@test.test1"
+}
+
+### 4 login
+POST http://localhost:5248/api/account/login
+Content-Type: application/json
+
+{
+  "username": "Test",
+  "password": "Test1!"
+}
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+    
+    client.global.set('current_token', response.body.access_token)
+    client.log(client.global.get('current_token'));
+%}
+
+### 5 get places deleted (logged in)
+GET http://localhost:5248/api/Place/Deleted
+Authorization: Bearer {{current_token}}
+Content-Type: application/json

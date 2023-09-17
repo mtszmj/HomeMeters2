@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using HomeMeters2.API.Constants;
@@ -5,6 +6,7 @@ using HomeMeters2.API.DataAccess;
 using HomeMeters2.API.Logging;
 using HomeMeters2.API.Places.Dtos;
 using HomeMeters2.API.Services.PublicIds;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,7 +24,8 @@ public class PlaceController : ControllerBase
     public PlaceController(ApplicationDbContext dbContext,
         PublicIdGenerator publicIdGenerator,
         IMapper mapper,
-        ILogger<PlaceController> logger)
+        ILogger<PlaceController> logger
+        )
     {
         _dbContext = dbContext;
         _publicIdGenerator = publicIdGenerator;
@@ -69,11 +72,13 @@ public class PlaceController : ControllerBase
     }
 
     [HttpGet("Deleted")]
+    [Authorize]
     [ProducesResponseType(typeof(IEnumerable<PlaceDeletedDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<PlaceDeletedDto>>> GetDeletedPlaces()
     {
         try
         {
+            var user = User;
             var places = await _dbContext.Places.IgnoreQueryFilters().Where(x => x.IsSoftDeleted).ToListAsync();
 
             var dtos = places.Select(x => _mapper.Map<PlaceDeletedDto>(x) with { Id = ToPublicId(x) });

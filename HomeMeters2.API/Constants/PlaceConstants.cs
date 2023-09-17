@@ -1,6 +1,6 @@
 namespace HomeMeters2.API.Constants;
 
-public class PlaceConstants
+public static class PlaceConstants
 {
     public const int PlaceNameMinimumLength = 3;
     public const int PlaceNameMaximumLength = 200;

@@ -1,9 +1,11 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using HomeMeters2.API.Constants;
 using HomeMeters2.API.DataAccess;
 using HomeMeters2.API.Extensions;
 using HomeMeters2.API.Logging;
 using HomeMeters2.API.Services.PublicIds;
+using HomeMeters2.API.Users;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
@@ -22,12 +24,22 @@ try
     builder.Services.AddScoped<PublicIdGenerator>();
     
     UseSerilog(builder);
-    builder.Services.AddHealthChecks();
+
+    builder.Services.AddAuthentication();
     
+    builder.Services.AddAuthorization();
+    builder.Services
+        .AddIdentityApiEndpoints<User>()
+        .AddEntityFrameworkStores<ApplicationDbContext>()
+        ;
+    
+    builder.Services.AddScoped<TokenService>();
+
+    builder.Services.AddHealthChecks();
     builder.Services.AddControllers();
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
+    builder.Services.AddSwaggerGen(o => o.InferSecuritySchemes());
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseSqlServer("name=ConnectionStrings:DefaultConnection")
             .EnableSensitiveDataLogging(builder.Environment.IsDevelopment())
@@ -49,7 +61,8 @@ try
     app.MapHealthChecks("/api/healthcheck");
 
     app.UseHttpsRedirection();
-
+    
+    app.UseAuthentication();
     app.UseAuthorization();
 
     app.MapControllers();
@@ -58,6 +71,8 @@ try
     var logger = app.Services.GetRequiredService<ILogger<Program>>();
     logger.LogWarning(LogIds.AppStartup, "Application startup");
     app.Lifetime.ApplicationStopping.Register(() => logger.LogWarning(LogIds.AppClose, "Application close"));
+
+    app.MapGroup(UsersConstants.EndpointPath).WithTags(UsersConstants.Tag).MapIdentityApi<User>();
     
     app.Run();
 }
