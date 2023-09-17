@@ -12,9 +12,8 @@ POST http://localhost:5248/api/account/register
 Content-Type: application/json
 
 {
-  "username": "Test",
-  "password": "Test1!",
-  "email": "test@test.test1"
+  "email": "test@test.test1",
+  "password": "Test1!"
 }
 
 ### 4 login
@@ -22,7 +21,7 @@ POST http://localhost:5248/api/account/login
 Content-Type: application/json
 
 {
-  "username": "Test",
+  "email": "test@test.test1",
   "password": "Test1!"
 }
 
@@ -31,7 +30,7 @@ Content-Type: application/json
         client.assert(response.status === 200, "Response status is not 200");
     });
     
-    client.global.set('current_token', response.body.access_token)
+    client.global.set('current_token', response.body.accessToken)
     client.log(client.global.get('current_token'));
 %}
 
