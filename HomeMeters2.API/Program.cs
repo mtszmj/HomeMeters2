@@ -29,12 +29,10 @@ try
     
     builder.Services.AddAuthorization();
     builder.Services
-        .AddIdentityApiEndpoints<User>()
+        .AddIdentityApiEndpoints<AppUser>()
         .AddEntityFrameworkStores<ApplicationDbContext>()
         ;
     
-    builder.Services.AddScoped<TokenService>();
-
     builder.Services.AddHealthChecks();
     builder.Services.AddControllers();
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -72,7 +70,7 @@ try
     logger.LogWarning(LogIds.AppStartup, "Application startup");
     app.Lifetime.ApplicationStopping.Register(() => logger.LogWarning(LogIds.AppClose, "Application close"));
 
-    app.MapGroup(UsersConstants.EndpointPath).WithTags(UsersConstants.Tag).MapIdentityApi<User>();
+    app.MapGroup(UsersConstants.EndpointPath).WithTags(UsersConstants.Tag).MapIdentityApi<AppUser>();
     
     app.Run();
 }

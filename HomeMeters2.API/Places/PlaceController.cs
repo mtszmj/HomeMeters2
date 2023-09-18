@@ -6,7 +6,9 @@ using HomeMeters2.API.DataAccess;
 using HomeMeters2.API.Logging;
 using HomeMeters2.API.Places.Dtos;
 using HomeMeters2.API.Services.PublicIds;
+using HomeMeters2.API.Users;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,17 +20,20 @@ public class PlaceController : ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly PublicIdGenerator _publicIdGenerator;
+    private readonly UserManager<AppUser> _userManager;
     private readonly IMapper _mapper;
     private readonly ILogger<PlaceController> _logger;
 
     public PlaceController(ApplicationDbContext dbContext,
         PublicIdGenerator publicIdGenerator,
+        UserManager<AppUser> userManager,
         IMapper mapper,
         ILogger<PlaceController> logger
         )
     {
         _dbContext = dbContext;
         _publicIdGenerator = publicIdGenerator;
+        _userManager = userManager;
         _mapper = mapper;
         _logger = logger;
     }
@@ -51,14 +56,19 @@ public class PlaceController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize]
     [ProducesResponseType(typeof(PlaceDeletedDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PlaceDto>> GetPlace(string id)
     {
         try
         {
+            if (await _userManager.GetUserAsync(User) is not { } user)
+            {
+                return Unauthorized();
+            }
             var decodedId = PublicToInternalId(id);
-            var place = await _dbContext.Places.FirstOrDefaultAsync(x => x.Id == decodedId);
+            var place = await _dbContext.Places.FirstOrDefaultAsync(x => x.Id == decodedId && x.OwnerId == user.Id);
             if (place is null)
                 return NotFound();
 
@@ -115,14 +125,20 @@ public class PlaceController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     [ProducesResponseType(typeof(PlaceDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<string>> CreatePlace(CreatePlaceDto dto)
     {
         try
         {
+            if (await _userManager.GetUserAsync(User) is not { } user)
+            {
+                return Unauthorized();
+            }
+            
             var place = new Place(dto.Name, dto.Description ?? string.Empty,
-                TimeProvider.System.GetUtcNow().UtcDateTime);
+                TimeProvider.System.GetUtcNow().UtcDateTime, user);
 
             _dbContext.Places.Add(place);
             var count = await _dbContext.SaveChangesAsync();

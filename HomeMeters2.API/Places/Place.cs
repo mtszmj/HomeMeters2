@@ -1,3 +1,5 @@
+using HomeMeters2.API.Users;
+
 namespace HomeMeters2.API.Places;
 
 public class Place
@@ -6,11 +8,12 @@ public class Place
     {
     }
 
-    public Place(string name, string description, DateTime dateCreatedUtc)
+    public Place(string name, string description, DateTime dateCreatedUtc, AppUser owner)
     {
         Name = name;
         Description = description;
         DateCreatedUtc = dateCreatedUtc;
+        Owner = owner;
     }
 
     public int Id { get; set; }
@@ -20,6 +23,8 @@ public class Place
     public DateTime? DateModifiedUtc { get; private set; }
     public bool IsSoftDeleted { get; private set; }
     public DateTime? DateSoftDeletedUtc { get; private set; }
+    public AppUser Owner { get; set; }
+    public string? OwnerId { get; set; }
 
     public void Delete()
     {
