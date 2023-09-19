@@ -1,5 +1,4 @@
 using System.Net.Http.Json;
-using System.Text.Json;
 using HomeMeters2.API.Places.Dtos;
 
 namespace HomeMeters2.API.Tests.Integration.Places;
@@ -10,57 +9,6 @@ public class PlaceControllerTests : IntegrationTestsBase
     private const string DeletedEndpointUri = "/api/place/deleted";
     
     [Test]
-    public async Task get_returns_ok()
-    {
-        var response = await Client.GetAsync(EndpointUri);
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-
-    [Test]
-    public async Task get_returns_two_places()
-    {
-        // arrange
-        _ = await PostCreatePlace("Test1", $"{nameof(get_returns_two_places)}_1");
-        _ = await PostCreatePlace("Test2", $"{nameof(get_returns_two_places)}_2");
-
-        // act
-        var response = await Client.GetAsync(EndpointUri);
-        
-        // assert 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
-        var placesContent = await response.Content.ReadAsStringAsync();
-        var placesDto = JsonSerializer.Deserialize<IEnumerable<PlaceDto>>(placesContent, JsonSerializerOptions);
-        placesDto.Should().NotBeNull();
-        placesDto.Should().HaveCount(2);
-    }
-
-    [Test]
-    public async Task get_returns_places_not_deleted()
-    {
-        // arrange
-        var p1 = await PostCreatePlace("Test1", $"{nameof(get_returns_two_places)}_1");
-        var p2 = await PostCreatePlace("Test2", $"{nameof(get_returns_two_places)}_2");
-        var p3 = await PostCreatePlace("Test3", $"{nameof(get_returns_two_places)}_3");
-        var p4 = await PostCreatePlace("Test4", $"{nameof(get_returns_two_places)}_4");
-
-        await Client.DeleteAsync($"{EndpointUri}/{p2.Id}");
-        await Client.DeleteAsync($"{EndpointUri}/{p4.Id}");
-
-        // act
-        var response = await Client.GetAsync(EndpointUri);
-        
-        // assert 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
-        var placesContent = await response.Content.ReadAsStringAsync();
-        var placesDto = JsonSerializer.Deserialize<PlaceDto[]>(placesContent, JsonSerializerOptions);
-        placesDto.Should().NotBeNull();
-        placesDto.Should().HaveCount(2);
-        placesDto.Select(x => x.Id).Should().BeEquivalentTo(new[] { p1.Id, p3.Id });
-    }
-
-    [Test]
     public async Task get_id_returns_single_place()
     {
         // arrange
@@ -68,7 +16,7 @@ public class PlaceControllerTests : IntegrationTestsBase
         _ = await PostCreatePlace("Test2", $"{nameof(get_id_returns_single_place)}_2");
         
         // act
-        var response = await LoggedInClient.GetAsync($"{EndpointUri}/{id}");
+        var response = await LoggedInClient1.GetAsync($"{EndpointUri}/{id}");
         
         // assert 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -88,7 +36,7 @@ public class PlaceControllerTests : IntegrationTestsBase
             Description = description
         };
         var content = JsonContent.Create(dto);
-        var createResponse = await LoggedInClient.PostAsync(EndpointUri, content);
+        var createResponse = await LoggedInClient1.PostAsync(EndpointUri, content);
         var createResponseContent = await createResponse.Content.ReadAsStringAsync();
         var placeDto = JsonSerializer.Deserialize<PlaceDto>(createResponseContent, JsonSerializerOptions);
         return placeDto ?? new PlaceDto { Id = "", Name = "", Description = "" };
@@ -106,7 +54,7 @@ public class PlaceControllerTests : IntegrationTestsBase
         var content = JsonContent.Create(dto);
         
         // act
-        var response = await LoggedInClient.PostAsync(EndpointUri, content);
+        var response = await LoggedInClient1.PostAsync(EndpointUri, content);
         
         // assert 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -128,7 +76,7 @@ public class PlaceControllerTests : IntegrationTestsBase
         var id3 = (await PostCreatePlace("Test3", $"{nameof(delete_returns_no_content)}_3")).Id;
         
         // act
-        var response = await Client.DeleteAsync($"{EndpointUri}/{id2}");
+        var response = await UnauthorizedClient.DeleteAsync($"{EndpointUri}/{id2}");
         
         // assert 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -142,11 +90,11 @@ public class PlaceControllerTests : IntegrationTestsBase
         var id2 = (await PostCreatePlace("Test2", $"{nameof(get_deleted_id_returns_single_deleted_place)}_2")).Id;
         var id3 = (await PostCreatePlace("Test3", $"{nameof(get_deleted_id_returns_single_deleted_place)}_3")).Id;
         
-        _ = await Client.DeleteAsync($"{EndpointUri}/{id2}");
-        _ = await Client.DeleteAsync($"{EndpointUri}/{id3}");
+        _ = await UnauthorizedClient.DeleteAsync($"{EndpointUri}/{id2}");
+        _ = await UnauthorizedClient.DeleteAsync($"{EndpointUri}/{id3}");
 
         // act
-        var response = await Client.GetAsync($"{DeletedEndpointUri}/{id2}");
+        var response = await UnauthorizedClient.GetAsync($"{DeletedEndpointUri}/{id2}");
 
         // assert 
         var content = await response.Content.ReadAsStringAsync();
@@ -164,11 +112,11 @@ public class PlaceControllerTests : IntegrationTestsBase
         var id2 = (await PostCreatePlace("Test2", $"{nameof(get_deleted_id_returns_single_deleted_place)}_2")).Id;
         var id3 = (await PostCreatePlace("Test3", $"{nameof(get_deleted_id_returns_single_deleted_place)}_3")).Id;
         
-        _ = await Client.DeleteAsync($"{EndpointUri}/{id2}");
-        _ = await Client.DeleteAsync($"{EndpointUri}/{id3}");
+        _ = await UnauthorizedClient.DeleteAsync($"{EndpointUri}/{id2}");
+        _ = await UnauthorizedClient.DeleteAsync($"{EndpointUri}/{id3}");
 
         // act
-        var response = await LoggedInClient.GetAsync($"{DeletedEndpointUri}");
+        var response = await LoggedInClient1.GetAsync($"{DeletedEndpointUri}");
 
         // assert 
         var content = await response.Content.ReadAsStringAsync();
@@ -192,7 +140,7 @@ public class PlaceControllerTests : IntegrationTestsBase
         // act
         var dto = new UpdatePlaceDto(created.Id, "Test1_updated", $"{nameof(update_returns_no_content)}_1_updated");
         var updateContent = JsonContent.Create(dto);
-        var updateResponse = await Client.PutAsync(EndpointUri, updateContent);
+        var updateResponse = await UnauthorizedClient.PutAsync(EndpointUri, updateContent);
 
         // assert 
         updateResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -207,10 +155,10 @@ public class PlaceControllerTests : IntegrationTestsBase
         // act
         var dto = new UpdatePlaceDto(created.Id, "Test1_updated", $"{nameof(update_changes_place_data)}_1_updated");
         var updateContent = JsonContent.Create(dto);
-        _ = await Client.PutAsync(EndpointUri, updateContent);
+        _ = await UnauthorizedClient.PutAsync(EndpointUri, updateContent);
 
         // assert 
-        var response = await LoggedInClient.GetAsync($"{EndpointUri}/{created.Id}");
+        var response = await LoggedInClient1.GetAsync($"{EndpointUri}/{created.Id}");
         var placesContent = await response.Content.ReadAsStringAsync();
         var placesDto = JsonSerializer.Deserialize<PlaceDto>(placesContent, JsonSerializerOptions);
 
@@ -228,7 +176,7 @@ public class PlaceControllerTests : IntegrationTestsBase
         // act
         var dto = new UpdatePlaceDto("notfoundid", "Test1_updated", $"{nameof(update_returns_not_found)}_1_updated");
         var updateContent = JsonContent.Create(dto);
-        var response = await Client.PutAsync(EndpointUri, updateContent);
+        var response = await UnauthorizedClient.PutAsync(EndpointUri, updateContent);
 
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);

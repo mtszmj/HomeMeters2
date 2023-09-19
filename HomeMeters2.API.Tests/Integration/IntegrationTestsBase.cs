@@ -15,9 +15,12 @@ namespace HomeMeters2.API.Tests.Integration;
 public class IntegrationTestsBase
 {
     private WebApplicationFactory<Program> _factory;
-    protected HttpClient Client;
-    private Lazy<HttpClient> LazyLoggedInClient;
-    protected HttpClient LoggedInClient => LazyLoggedInClient.Value;
+    private Lazy<HttpClient> LazyUnauthorizedClient;
+    private Lazy<HttpClient> LazyLoggedInClient1;
+    private Lazy<HttpClient> LazyLoggedInClient2;
+    protected HttpClient UnauthorizedClient => LazyUnauthorizedClient.Value;
+    protected HttpClient LoggedInClient1 => LazyLoggedInClient1.Value;
+    protected HttpClient LoggedInClient2 => LazyLoggedInClient2.Value;
 
     protected JsonSerializerOptions JsonSerializerOptions { get; } = new()
     {
@@ -45,32 +48,33 @@ public class IntegrationTestsBase
                     .ConfigureWarnings(b => b.Ignore(InMemoryEventId.TransactionIgnoredWarning)));
             });
         });
-        Client = _factory.CreateClient();
-        LazyLoggedInClient = new Lazy<HttpClient>(CreateLoggedInClient);
+        LazyUnauthorizedClient = new Lazy<HttpClient>(() => _factory.CreateClient());
+        LazyLoggedInClient1 = new Lazy<HttpClient>(() => CreateLoggedInClient("test@test.test1"));
+        LazyLoggedInClient2 = new Lazy<HttpClient>(() => CreateLoggedInClient("test@test.test2"));
     }
 
     [TearDown]
     public virtual void TearDown()
     {
         _factory.Dispose();
-        Client.Dispose();
-        if (LazyLoggedInClient.IsValueCreated)
-            LazyLoggedInClient.Value.Dispose();
+        UnauthorizedClient.Dispose();
+        if (LazyLoggedInClient1.IsValueCreated)
+            LazyLoggedInClient1.Value.Dispose();
     }
 
-    private HttpClient CreateLoggedInClient()
+    private HttpClient CreateLoggedInClient(string email)
     {
         var httpClient = _factory.CreateClient();
         var content = JsonContent.Create(new
         {
-            Email = "test@test.test1",
+            Email = email,
             Password = "Test1!"
         });
         var result = httpClient.PostAsync($"{UsersConstants.EndpointPath}/register", content).GetAwaiter().GetResult();
 
         content = JsonContent.Create(new
         {
-            Email = "test@test.test1",
+            Email = email,
             Password = "Test1!"
         });
         var result2 = httpClient.PostAsync($"{UsersConstants.EndpointPath}/login", content).GetAwaiter().GetResult();

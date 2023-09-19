@@ -34,17 +34,22 @@ Content-Type: application/json
     client.log(client.global.get('current_token'));
 %}
 
-### 5 get places deleted (logged in)
+### 5 get places (logged in)
+GET http://localhost:5248/api/Place
+Authorization: Bearer {{current_token}}
+Content-Type: application/json
+
+### 6 get places deleted (logged in)
 GET http://localhost:5248/api/Place/Deleted
 Authorization: Bearer {{current_token}}
 Content-Type: application/json
 
-### 6 account info
+### 7 account info
 GET http://localhost:5248/api/account/manage/info
 Authorization: Bearer {{current_token}}
 Content-Type: application/json
 
-### 7 create place
+### 8 create place
 POST http://localhost:5248/api/place
 Authorization: Bearer {{current_token}}
 Content-Type: application/json
@@ -54,7 +59,7 @@ Content-Type: application/json
   "description": "test-place-description"
 }
 
-### 8 get place by id
+### 9 get place by id
 GET http://localhost:5248/api/place/LE70e7
 Authorization: Bearer {{current_token}}
 Content-Type: application/json

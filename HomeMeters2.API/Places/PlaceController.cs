@@ -16,35 +16,32 @@ namespace HomeMeters2.API.Places;
 
 [ApiController]
 [Route("api/[controller]")]
-public class PlaceController : ControllerBase
-{
-    private readonly ApplicationDbContext _dbContext;
-    private readonly PublicIdGenerator _publicIdGenerator;
-    private readonly UserManager<AppUser> _userManager;
-    private readonly IMapper _mapper;
-    private readonly ILogger<PlaceController> _logger;
-
-    public PlaceController(ApplicationDbContext dbContext,
+public class PlaceController(ApplicationDbContext dbContext,
         PublicIdGenerator publicIdGenerator,
         UserManager<AppUser> userManager,
         IMapper mapper,
-        ILogger<PlaceController> logger
-        )
-    {
-        _dbContext = dbContext;
-        _publicIdGenerator = publicIdGenerator;
-        _userManager = userManager;
-        _mapper = mapper;
-        _logger = logger;
-    }
+        ILogger<PlaceController> logger)
+    : ControllerBase
+{
+    private readonly ApplicationDbContext _dbContext = dbContext;
+    private readonly PublicIdGenerator _publicIdGenerator = publicIdGenerator;
+    private readonly UserManager<AppUser> _userManager = userManager;
+    private readonly IMapper _mapper = mapper;
+    private readonly ILogger<PlaceController> _logger = logger;
 
     [HttpGet]
+    [Authorize]
     [ProducesResponseType(typeof(IEnumerable<PlaceDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<PlaceDto>>> GetPlaces()
     {
         try
         {
-            var places = await _dbContext.Places.ToListAsync();
+            if (await _userManager.GetUserAsync(User) is not { } user)
+            {
+                return Unauthorized();
+            }
+            
+            var places = await _dbContext.Places.Where(x => x.OwnerId == user.Id).ToListAsync();
             var dtos = places.Select(x => _mapper.Map<PlaceDto>(x) with { Id = ToPublicId(x) });
             return Ok(dtos);
         }
