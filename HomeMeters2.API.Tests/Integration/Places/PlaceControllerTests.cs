@@ -85,32 +85,7 @@ public class PlaceControllerTests : IntegrationTestsBase
         placeDto.Description.Should().Be($"{nameof(get_deleted_id_returns_single_deleted_place)}_2");
     }
 
-    [Test]
-    public async Task get_deleted_returns_only_deleted()
-    {
-        // arrange
-        var id1 = (await PostCreatePlace("Test1", $"{nameof(get_deleted_id_returns_single_deleted_place)}_1")).Id;
-        var id2 = (await PostCreatePlace("Test2", $"{nameof(get_deleted_id_returns_single_deleted_place)}_2")).Id;
-        var id3 = (await PostCreatePlace("Test3", $"{nameof(get_deleted_id_returns_single_deleted_place)}_3")).Id;
-        
-        _ = await UnauthorizedClient.DeleteAsync($"{EndpointUri}/{id2}");
-        _ = await UnauthorizedClient.DeleteAsync($"{EndpointUri}/{id3}");
-
-        // act
-        var response = await LoggedInClient1.GetAsync($"{DeletedEndpointUri}");
-
-        // assert 
-        var content = await response.Content.ReadAsStringAsync();
-        var places = JsonSerializer.Deserialize<PlaceDeletedDto[]>(content, JsonSerializerOptions);
-        places.Should().NotBeNull();
-        places.Should().HaveCount(2);
-        places[0].Should().NotBeNull();
-        places[0].Name.Should().BeOneOf("Test2", "Test3");
-        places[1].Should().NotBeNull();
-        places[1].Name.Should().BeOneOf("Test2", "Test3");
-        places[0].Name.Should().NotBe(places[1].Name);
-    }
-
+    
     [Test]
     public async Task update_returns_no_content()
     {

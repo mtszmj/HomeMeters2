@@ -6,6 +6,7 @@ namespace HomeMeters2.API.Tests.Integration.Places._PlaceController;
 public class PlaceControllerTestsBase : IntegrationTestsBase
 {
     protected string EndpointUri { get; } = "/api/place";
+    protected string DeletedEndpointUri { get; } = "/api/place/deleted";
 
     protected async Task<PlaceDto> PostCreatePlace(string name, string description, HttpClient? client = null)
     {

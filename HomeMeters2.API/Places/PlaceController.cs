@@ -71,8 +71,12 @@ public class PlaceController(ApplicationDbContext dbContext,
     {
         try
         {
-            var user = User;
-            var places = await dbContext.Places.IgnoreQueryFilters().Where(x => x.IsSoftDeleted).ToListAsync();
+            if (await userManager.GetUserAsync(User) is not { } user) return Unauthorized();
+
+            var places = await dbContext.Places
+                .IgnoreQueryFilters()
+                .Where(x => x.IsSoftDeleted && x.OwnerId == user.Id)
+                .ToListAsync();
 
             var dtos = places.Select(x => mapper.Map<PlaceDeletedDto>(x) with { Id = ToPublicId(x) });
             return Ok(dtos);
