@@ -8,26 +8,7 @@ public class PlaceControllerTests : IntegrationTestsBase
     private const string EndpointUri = "/api/place";
     private const string DeletedEndpointUri = "/api/place/deleted";
     
-    [Test]
-    public async Task get_id_returns_single_place()
-    {
-        // arrange
-        var id = (await PostCreatePlace("Test1", $"{nameof(get_id_returns_single_place)}_1")).Id;
-        _ = await PostCreatePlace("Test2", $"{nameof(get_id_returns_single_place)}_2");
-        
-        // act
-        var response = await LoggedInClient1.GetAsync($"{EndpointUri}/{id}");
-        
-        // assert 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
-        var placesContent = await response.Content.ReadAsStringAsync();
-        var placesDto = JsonSerializer.Deserialize<PlaceDto>(placesContent, JsonSerializerOptions);
-        placesDto.Should().NotBeNull();
-        placesDto.Id.Should().Be(id);
-        placesDto.Description.Should().Be($"{nameof(get_id_returns_single_place)}_1");
-    }
-
+    
     private async Task<PlaceDto> PostCreatePlace(string name, string description)
     {
         var dto = new CreatePlaceDto

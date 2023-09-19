@@ -2,7 +2,7 @@ using HomeMeters2.API.Places.Dtos;
 
 namespace HomeMeters2.API.Tests.Integration.Places._PlaceController;
 
-public class GetTests : PlaceControllerTestsBase
+public class Get : PlaceControllerTestsBase
 {
     [Test]
     public async Task get_returns_unauthorized()
