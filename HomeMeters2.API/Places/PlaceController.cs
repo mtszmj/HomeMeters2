@@ -1,6 +1,4 @@
-using System.Security.Claims;
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using HomeMeters2.API.Constants;
 using HomeMeters2.API.DataAccess;
 using HomeMeters2.API.Logging;
@@ -23,12 +21,6 @@ public class PlaceController(ApplicationDbContext dbContext,
         ILogger<PlaceController> logger)
     : ControllerBase
 {
-    private readonly ApplicationDbContext _dbContext = dbContext;
-    private readonly PublicIdGenerator _publicIdGenerator = publicIdGenerator;
-    private readonly UserManager<AppUser> _userManager = userManager;
-    private readonly IMapper _mapper = mapper;
-    private readonly ILogger<PlaceController> _logger = logger;
-
     [HttpGet]
     [Authorize]
     [ProducesResponseType(typeof(IEnumerable<PlaceDto>), StatusCodes.Status200OK)]
@@ -36,18 +28,15 @@ public class PlaceController(ApplicationDbContext dbContext,
     {
         try
         {
-            if (await _userManager.GetUserAsync(User) is not { } user)
-            {
-                return Unauthorized();
-            }
-            
-            var places = await _dbContext.Places.Where(x => x.OwnerId == user.Id).ToListAsync();
-            var dtos = places.Select(x => _mapper.Map<PlaceDto>(x) with { Id = ToPublicId(x) });
+            if (await userManager.GetUserAsync(User) is not { } user) return Unauthorized();
+
+            var places = await dbContext.Places.Where(x => x.OwnerId == user.Id).ToListAsync();
+            var dtos = places.Select(x => mapper.Map<PlaceDto>(x) with { Id = ToPublicId(x) });
             return Ok(dtos);
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
+            logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
             return Problem();
         }
     }
@@ -60,20 +49,17 @@ public class PlaceController(ApplicationDbContext dbContext,
     {
         try
         {
-            if (await _userManager.GetUserAsync(User) is not { } user)
-            {
-                return Unauthorized();
-            }
+            if (await userManager.GetUserAsync(User) is not { } user) return Unauthorized();
             var decodedId = PublicToInternalId(id);
-            var place = await _dbContext.Places.FirstOrDefaultAsync(x => x.Id == decodedId && x.OwnerId == user.Id);
+            var place = await dbContext.Places.FirstOrDefaultAsync(x => x.Id == decodedId && x.OwnerId == user.Id);
             if (place is null)
                 return NotFound();
 
-            return _mapper.Map<PlaceDto>(place) with { Id = ToPublicId(place) };
+            return mapper.Map<PlaceDto>(place) with { Id = ToPublicId(place) };
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
+            logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
             return Problem();
         }
     }
@@ -86,14 +72,14 @@ public class PlaceController(ApplicationDbContext dbContext,
         try
         {
             var user = User;
-            var places = await _dbContext.Places.IgnoreQueryFilters().Where(x => x.IsSoftDeleted).ToListAsync();
+            var places = await dbContext.Places.IgnoreQueryFilters().Where(x => x.IsSoftDeleted).ToListAsync();
 
-            var dtos = places.Select(x => _mapper.Map<PlaceDeletedDto>(x) with { Id = ToPublicId(x) });
+            var dtos = places.Select(x => mapper.Map<PlaceDeletedDto>(x) with { Id = ToPublicId(x) });
             return Ok(dtos);
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
+            logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
             return Problem();
         }
     }
@@ -106,17 +92,17 @@ public class PlaceController(ApplicationDbContext dbContext,
         try
         {
             var decodedId = PublicToInternalId(id);
-            var place = await _dbContext.Places.IgnoreQueryFilters()
+            var place = await dbContext.Places.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(x => x.Id == decodedId && x.IsSoftDeleted);
             if (place is null)
                 return NotFound();
 
-            var dto = _mapper.Map<PlaceDeletedDto>(place) with { Id = ToPublicId(place) };
+            var dto = mapper.Map<PlaceDeletedDto>(place) with { Id = ToPublicId(place) };
             return dto;
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
+            logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
             return Problem();
         }
     }
@@ -129,29 +115,26 @@ public class PlaceController(ApplicationDbContext dbContext,
     {
         try
         {
-            if (await _userManager.GetUserAsync(User) is not { } user)
-            {
-                return Unauthorized();
-            }
-            
+            if (await userManager.GetUserAsync(User) is not { } user) return Unauthorized();
+
             var place = new Place(dto.Name, dto.Description ?? string.Empty,
                 TimeProvider.System.GetUtcNow().UtcDateTime, user);
 
-            _dbContext.Places.Add(place);
-            var count = await _dbContext.SaveChangesAsync();
+            dbContext.Places.Add(place);
+            var count = await dbContext.SaveChangesAsync();
 
             if (count == 0) return BadRequest("Could not save place.");
 
             var publicId = ToPublicId(place);
             return CreatedAtAction(
-                nameof(GetPlace), 
+                nameof(GetPlace),
                 new { id = publicId },
-                _mapper.Map<PlaceDto>(place) with { Id = publicId }
+                mapper.Map<PlaceDto>(place) with { Id = publicId }
             );
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
+            logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
             return Problem();
         }
     }
@@ -165,7 +148,7 @@ public class PlaceController(ApplicationDbContext dbContext,
         try
         {
             var decodedId = PublicToInternalId(dto.Id);
-            var place = await _dbContext.Places.FirstOrDefaultAsync(x => x.Id == decodedId);
+            var place = await dbContext.Places.FirstOrDefaultAsync(x => x.Id == decodedId);
             if (place is null)
                 return NotFound();
 
@@ -173,13 +156,13 @@ public class PlaceController(ApplicationDbContext dbContext,
             if (!result)
                 return BadRequest("No update took place");
 
-            var updated = await _dbContext.SaveChangesAsync();
+            var updated = await dbContext.SaveChangesAsync();
 
             return updated > 0 ? NoContent() : BadRequest("No update took place");
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
+            logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
             return Problem();
         }
     }
@@ -192,29 +175,29 @@ public class PlaceController(ApplicationDbContext dbContext,
         try
         {
             var decodedId = PublicToInternalId(id);
-            var place = await _dbContext.Places.FirstOrDefaultAsync(x => x.Id == decodedId);
+            var place = await dbContext.Places.FirstOrDefaultAsync(x => x.Id == decodedId);
             if (place is null)
                 return NotFound();
 
             place.Delete();
-            var updated = await _dbContext.SaveChangesAsync();
+            var updated = await dbContext.SaveChangesAsync();
             return updated > 0 ? NoContent() : BadRequest("No delete took place");
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
+            logger.LogError(LogIds.Place.ControllerException, ex, "CreatePlace exception: {Message}", ex.Message);
             return Problem();
         }
     }
 
     private int PublicToInternalId(string publicId)
     {
-        var decoded = _publicIdGenerator.Decode(publicId);
+        var decoded = publicIdGenerator.Decode(publicId);
         return decoded.Count > 1 ? decoded[1] : 0;
     }
 
     private string ToPublicId(Place place)
     {
-        return _publicIdGenerator.Encode(PlaceConstants.PlacePublicIdAppendValue, place.Id);
+        return publicIdGenerator.Encode(PlaceConstants.PlacePublicIdAppendValue, place.Id);
     }
 }
