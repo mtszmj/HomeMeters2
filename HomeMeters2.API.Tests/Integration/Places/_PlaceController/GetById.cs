@@ -8,8 +8,8 @@ public class GetById : PlaceControllerTestsBase
     public async Task get_id_returns_unauthorized_when_id_exists()
     {
         // arrange
-        var id = (await PostCreatePlace("Test1", $"{nameof(get_id_returns_single_place)}_1", LoggedInClient1)).Id;
-        _ = await PostCreatePlace("Test2", $"{nameof(get_id_returns_single_place)}_2", LoggedInClient1);
+        var id = (await PostCreatePlace("Test1", $"{nameof(get_id_returns_unauthorized_when_id_exists)}_1", LoggedInClient1)).Id;
+        _ = await PostCreatePlace("Test2", $"{nameof(get_id_returns_unauthorized_when_id_exists)}_2", LoggedInClient1);
         
         // act
         var response = await UnauthorizedClient.GetAsync($"{EndpointUri}/{id}");
@@ -32,8 +32,8 @@ public class GetById : PlaceControllerTestsBase
     public async Task get_id_returns_not_found()
     {
         // arrange
-        _ = await PostCreatePlace("Test1", $"{nameof(get_id_returns_single_place)}_1", LoggedInClient1);
-        _ = await PostCreatePlace("Test2", $"{nameof(get_id_returns_single_place)}_2", LoggedInClient1);
+        _ = await PostCreatePlace("Test1", $"{nameof(get_id_returns_not_found)}_1", LoggedInClient1);
+        _ = await PostCreatePlace("Test2", $"{nameof(get_id_returns_not_found)}_2", LoggedInClient1);
         
         // act
         var response = await LoggedInClient1.GetAsync($"{EndpointUri}/notexists!@#");
@@ -66,9 +66,9 @@ public class GetById : PlaceControllerTestsBase
     public async Task get_id_returns_not_found_when_id_has_different_owner()
     {
         // arrange
-        _ = await PostCreatePlace("Test1", $"{nameof(get_id_returns_single_place)}_1", LoggedInClient1);
-        _ = await PostCreatePlace("Test2", $"{nameof(get_id_returns_single_place)}_2", LoggedInClient1);
-        var other = (await PostCreatePlace("Test2", $"{nameof(get_id_returns_single_place)}_2", LoggedInClient2)).Id;
+        _ = await PostCreatePlace("Test1", $"{nameof(get_id_returns_not_found_when_id_has_different_owner)}_1", LoggedInClient1);
+        _ = await PostCreatePlace("Test2", $"{nameof(get_id_returns_not_found_when_id_has_different_owner)}_2", LoggedInClient1);
+        var other = (await PostCreatePlace("Test2", $"{nameof(get_id_returns_not_found_when_id_has_different_owner)}_2", LoggedInClient2)).Id;
         
         // act
         var response = await LoggedInClient1.GetAsync($"{EndpointUri}/{other}");
@@ -81,8 +81,8 @@ public class GetById : PlaceControllerTestsBase
     public async Task get_id_returns_not_found_if_deleted()
     {
         // arrange
-        var id = (await PostCreatePlace("Test1", $"{nameof(get_id_returns_single_place)}_1")).Id;
-        _ = await PostCreatePlace("Test2", $"{nameof(get_id_returns_single_place)}_2");
+        var id = (await PostCreatePlace("Test1", $"{nameof(get_id_returns_not_found_if_deleted)}_1")).Id;
+        _ = await PostCreatePlace("Test2", $"{nameof(get_id_returns_not_found_if_deleted)}_2");
         _ = await LoggedInClient1.DeleteAsync($"{EndpointUri}/{id}");
         
         // act
@@ -96,8 +96,8 @@ public class GetById : PlaceControllerTestsBase
     public async Task get_id_returns_not_found_if_deleted_and_other_owner()
     {
         // arrange
-        var id = (await PostCreatePlace("Test1", $"{nameof(get_id_returns_single_place)}_1", LoggedInClient2)).Id;
-        _ = await PostCreatePlace("Test2", $"{nameof(get_id_returns_single_place)}_2");
+        var id = (await PostCreatePlace("Test1", $"{nameof(get_id_returns_not_found_if_deleted_and_other_owner)}_1", LoggedInClient2)).Id;
+        _ = await PostCreatePlace("Test2", $"{nameof(get_id_returns_not_found_if_deleted_and_other_owner)}_2");
         _ = await LoggedInClient2.DeleteAsync($"{EndpointUri}/{id}");
         
         // act
