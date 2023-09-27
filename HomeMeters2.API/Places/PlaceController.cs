@@ -89,15 +89,18 @@ public class PlaceController(ApplicationDbContext dbContext,
     }
 
     [HttpGet("Deleted/{id}")]
+    [Authorize]
     [ProducesResponseType(typeof(PlaceDeletedDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PlaceDeletedDto>> GetDeletedPlace(string id)
     {
         try
         {
+            if (await userManager.GetUserAsync(User) is not { } user) return Unauthorized();
+
             var decodedId = PublicToInternalId(id);
             var place = await dbContext.Places.IgnoreQueryFilters()
-                .FirstOrDefaultAsync(x => x.Id == decodedId && x.IsSoftDeleted);
+                .FirstOrDefaultAsync(x => x.Id == decodedId && x.IsSoftDeleted && x.OwnerId == user.Id);
             if (place is null)
                 return NotFound();
 

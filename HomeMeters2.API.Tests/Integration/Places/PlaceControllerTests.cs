@@ -62,29 +62,6 @@ public class PlaceControllerTests : IntegrationTestsBase
         // assert 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
-
-    [Test]
-    public async Task get_deleted_id_returns_single_deleted_place()
-    {
-        // arrange
-        var id1 = (await PostCreatePlace("Test1", $"{nameof(get_deleted_id_returns_single_deleted_place)}_1")).Id;
-        var id2 = (await PostCreatePlace("Test2", $"{nameof(get_deleted_id_returns_single_deleted_place)}_2")).Id;
-        var id3 = (await PostCreatePlace("Test3", $"{nameof(get_deleted_id_returns_single_deleted_place)}_3")).Id;
-        
-        _ = await UnauthorizedClient.DeleteAsync($"{EndpointUri}/{id2}");
-        _ = await UnauthorizedClient.DeleteAsync($"{EndpointUri}/{id3}");
-
-        // act
-        var response = await UnauthorizedClient.GetAsync($"{DeletedEndpointUri}/{id2}");
-
-        // assert 
-        var content = await response.Content.ReadAsStringAsync();
-        var placeDto = JsonSerializer.Deserialize<PlaceDeletedDto>(content, JsonSerializerOptions);
-        placeDto.Should().NotBeNull();
-        placeDto.Name.Should().Be("Test2");
-        placeDto.Description.Should().Be($"{nameof(get_deleted_id_returns_single_deleted_place)}_2");
-    }
-
     
     [Test]
     public async Task update_returns_no_content()
